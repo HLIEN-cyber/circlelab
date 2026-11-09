@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{box-sizing:border-box}body{margin:0;font:14px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>Apollonius Circle Lab</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&family=Source+Serif+4:ital,wght@1,500&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: graph board on the left, control/readout column on the right; stacks on phones. Palette echoes the class slides (blue problem box, green answers). */
+:root{
+  --bg:#f7f9fc; --panel:#ffffff; --fg:#1f2430; --muted:#5f6876; --line:#d6dde8; --grid:#e7ecf3; --axis:#8a95a6;
+  --accent:#1a73e8; --div:#b06000; --a:#d93025; --b:#1a73e8; --p:#188038; --circle:#188038; --soft:#e8f0fe;
+  --display:"Source Serif 4",Georgia,serif; --body:"Source Sans 3","Segoe UI",Arial,"Microsoft JhengHei",sans-serif; --mono:"JetBrains Mono",Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#12161d; --panel:#1a1f28; --fg:#e8ecf2; --muted:#9aa4b3; --line:#2c3442; --grid:#222a35; --axis:#6b778a;
+  --accent:#8ab4f8; --div:#fdd663; --a:#f28b82; --b:#8ab4f8; --p:#81c995; --circle:#81c995; --soft:#1e2a3d; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#12161d; --panel:#1a1f28; --fg:#e8ecf2; --muted:#9aa4b3; --line:#2c3442; --grid:#222a35; --axis:#6b778a;
+  --accent:#8ab4f8; --div:#fdd663; --a:#f28b82; --b:#8ab4f8; --p:#81c995; --circle:#81c995; --soft:#1e2a3d; color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:17px;line-height:1.45}
+.wrap{max-width:1180px;margin:0 auto;padding-block:20px 32px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1{font-family:var(--display);font-style:italic;font-weight:500;font-size:clamp(26px,3.4vw,36px);margin:0;text-wrap:balance}
+.sub{color:var(--muted);margin:4px 0 16px}
+.grid{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:18px;align-items:stretch}
+.row + .row{margin-top:18px}
+@media (max-width:820px){.grid{grid-template-columns:1fr}}
+.board{background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden;touch-action:none}
+svg{display:block;width:100%;height:auto;user-select:none}
+.left{display:flex;flex-direction:column;gap:14px;min-width:0}
+.why{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--div);border-radius:10px;padding:16px 18px}
+.why h2{font-family:var(--display);font-style:italic;font-weight:500;font-size:24px;margin:0 0 10px;color:var(--fg)}
+.steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px}
+.steps li{display:grid;grid-template-columns:30px minmax(0,1fr);gap:10px;align-items:start}
+.sn{width:28px;height:28px;border-radius:50%;background:var(--div);color:var(--panel);display:grid;place-items:center;font-weight:700}
+.sx{font-family:var(--mono);font-size:17px;background:var(--soft);border-radius:8px;padding:8px 10px;margin-top:4px;overflow-x:auto;white-space:nowrap}
+.sc{margin:6px 0 0;font-size:16px}
+.sc .ok{font-weight:700}
+.tog{display:flex;gap:6px;align-items:center;margin-top:8px}
+.side{display:flex;flex-direction:column;gap:14px;min-width:0}
+.side > .card{flex:1 1 auto}
+.board{align-self:start}
+.qs{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:8px;font-size:16px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+.card h2{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 8px;font-weight:700}
+.ratio{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:20px}
+.step{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.step button{background:var(--soft);color:var(--fg);border:0;width:36px;height:38px;font-size:20px;cursor:pointer}
+.step button:focus-visible,.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.step output{min-width:34px;text-align:center;font-family:var(--mono);font-size:20px}
+.eq{font-family:var(--mono);font-size:clamp(16px,1.9vw,20px);background:var(--soft);border-radius:8px;padding:10px 12px;overflow-x:auto;white-space:nowrap}
+.eq + .eq{margin-top:8px}
+.ok{color:var(--p);font-weight:700}
+.read{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-family:var(--mono);font-size:17px;font-variant-numeric:tabular-nums}
+.read b{font-family:var(--body);color:var(--muted);font-weight:600}
+.btns{display:flex;gap:8px;flex-wrap:wrap}
+.btn{background:var(--panel);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 12px;font:600 15px var(--body);cursor:pointer}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--panel)}
+.hint{color:var(--muted);font-size:15px;margin:0}
+.ka{color:var(--a);font-weight:700}.kb{color:var(--b);font-weight:700}.kp{color:var(--p);font-weight:700}
+.foot{color:var(--muted);font-size:13px;margin-top:18px}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+  <h1>Apollonius Circle Lab（阿波羅尼斯圓）</h1>
+  <p class="sub">All points <span class="kp">P</span> with <span class="ka">PA</span> : <span class="kb">PB</span> = m : n form a circle (m ≠ n). Drag <span class="ka">A</span>, <span class="kb">B</span>, or <span class="kp">P</span>. A and B snap to grid points.</p>
+  <div class="grid row">
+    <div class="board" id="board">
+      <svg id="svg" viewBox="0 0 640 480" aria-label="Coordinate plane showing points A, B, P and the locus circle"></svg>
+    </div>
+    <div class="side">
+      <div class="card">
+        <h2>Ratio 比值</h2>
+        <div class="ratio">
+          <span class="ka">PA</span> : <span class="kb">PB</span> =
+          <span class="step"><button id="mDown" aria-label="decrease m">−</button><output id="mOut">1</output><button id="mUp" aria-label="increase m">+</button></span>
+          :
+          <span class="step"><button id="nDown" aria-label="decrease n">−</button><output id="nOut">2</output><button id="nUp" aria-label="increase n">+</button></span>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Locus of P 軌跡方程式</h2>
+        <div class="eq" id="eqGen"></div>
+        <div class="eq" id="eqStd"></div>
+        <p class="hint" id="eqNote" style="margin-top:8px"></p>
+      </div>
+      <div class="card">
+        <h2>Check with P 驗證</h2>
+        <div class="read">
+          <b>P</b><span id="rP"></span>
+          <b>PA</b><span id="rPA"></span>
+          <b>PB</b><span id="rPB"></span>
+          <b>PA / PB</b><span id="rRatio"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="grid row">
+    <section class="why" aria-labelledby="whyTitle">
+      <h2 id="whyTitle">Why is it a circle? 為什麼是圓？</h2>
+      <ol class="steps">
+        <li><span class="sn">1</span><div><b>Square the ratio 比值平方</b><div class="sx" id="s1"></div></div></li>
+        <li><span class="sn">2</span><div><b>Expand 展開</b><div class="sx" id="s2"></div><p class="sc" id="s2c"></p></div></li>
+        <li><span class="sn">3</span><div><b>Find a diameter 找直徑</b><p class="sc">The circle crosses line AB at the internal and external division points (內分點、外分點) of AB in the ratio m : n. They are the two ends of a diameter.</p><div class="read" id="divRead"></div>
+        <label class="hint tog"><input type="checkbox" id="showDiv" checked> Show I and E on the graph</label></div></li>
+      </ol>
+    </section>
+    <div class="side">
+      <div class="card">
+        <h2>Try 試試看</h2>
+        <div class="btns">
+          <button class="btn primary" id="book">Textbook Example 5-1</button>
+          <button class="btn" id="spin">Move P around</button>
+          <button class="btn" id="equal">Set 1 : 1</button>
+          <button class="btn" id="trace">Leave a trace</button>
+        </div>
+      </div>
+      <div class="card think">
+        <h2>Think 想一想</h2>
+        <ol class="qs">
+          <li>Change the ratio to 1 : 3, 1 : 4, 1 : 5. Does the circle get bigger or smaller? Which point does it shrink toward?</li>
+          <li>Which point, A or B, is inside the circle? Why?</li>
+          <li>What happens when m : n gets close to 1 : 1? Compare with “Set 1 : 1”.</li>
+          <li>Is the center between A and B, or outside segment AB?</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+  <p class="foot">This worksheet was designed collaboratively with Claude (Anthropic).</p>
+</div>
+
+<script>
+(function(){
+const NS="http://www.w3.org/2000/svg", svg=document.getElementById('svg');
+const W=640,H=480, U=24; // px per unit
+let ox=W/2-2*U, oy=H/2+0*U; // origin in px (set so default example is visible)
+const st={A:[3,-1],B:[0,5],m:1,n:2,theta:-0.6,trace:false,traces:[]};
+const X=x=>ox+x*U, Y=y=>oy-y*U, iX=px=>(px-ox)/U, iY=py=>(oy-py)/U;
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+function el(t,a,p){const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);(p||svg).appendChild(e);return e}
+const gcd=(a,b)=>{a=Math.abs(a);b=Math.abs(b);while(b){[a,b]=[b,a%b]}return a||1};
+function frac(p,q){if(q<0){p=-p;q=-q}const g=gcd(p,q);p/=g;q/=g;return q===1?String(p):p+'/'+q}
+function sgnTerm(c,v,first){ if(c===0)return ''; const s=c<0?'−':'+'; const a=Math.abs(c);
+  const body=(a==='1'||a===1)&&v?v:(typeof a==='number'?a:a)+v; return first?(c<0?'−':'')+body:' '+s+' '+body;}
+function geom(){
+  const [a1,a2]=st.A,[b1,b2]=st.B,m=st.m,n=st.n, M=m*m,N=n*n;
+  if(m===n){ return {line:true} }
+  // N*PA^2 = M*PB^2  -> (N-M)(x^2+y^2) - 2(N a1 - M b1)x - 2(N a2 - M b2)y + (N|A|^2 - M|B|^2) = 0
+  const k=N-M, px=N*a1-M*b1, py=N*a2-M*b2, c=N*(a1*a1+a2*a2)-M*(b1*b1+b2*b2);
+  const cx=px/k, cy=py/k, d2=(a1-b1)**2+(a2-b2)**2, r=Math.sqrt(M*N*d2)/Math.abs(k);
+  return {line:false,k,px,py,c,cx,cy,r,M,N,d2};
+}
+function eqText(g){
+  if(g.line){
+    const [a1,a2]=st.A,[b1,b2]=st.B;
+    // |PA|=|PB|  -> 2(b1-a1)x + 2(b2-a2)y + (a1^2+a2^2-b1^2-b2^2)=0
+    let A_=2*(b1-a1),B_=2*(b2-a2),C_=a1*a1+a2*a2-b1*b1-b2*b2; const g0=gcd(gcd(A_,B_),C_); A_/=g0;B_/=g0;C_/=g0;
+    if(A_<0||(A_===0&&B_<0)){A_=-A_;B_=-B_;C_=-C_}
+    let s=''; if(A_)s+=sgnTerm(A_===1?1:A_,'x',true).replace(/^1x/,'x'); if(B_)s+=sgnTerm(B_,'y',!s); if(C_||!s)s+=(C_<0?' − ':' + ')+Math.abs(C_);
+    return [s.replace(/(^|[ −+])1([xy])/g,'$1$2')+' = 0','Perpendicular bisector of AB（AB 的中垂線）','When m = n the "circle" becomes a straight line.'];
+  }
+  let {k,px,py,c}=g; // k(x²+y²) − 2px x − 2py y + c = 0
+  let D=-2*px,E=-2*py,F=c; let K=k; if(K<0){K=-K;D=-D;E=-E;F=-F}
+  const gg=gcd(gcd(gcd(K,D),E),F); K/=gg;D/=gg;E/=gg;F/=gg;
+  const lead=K===1?'x² + y²':K+'x² + '+K+'y²';
+  const t=(c,v)=>c===0?'':(c<0?' − ':' + ')+(Math.abs(c)===1&&v?'':Math.abs(c))+v;
+  const gen=lead+t(D,'x')+t(E,'y')+t(F,'')+' = 0';
+  const cxs=frac(g.px,g.k), cys=frac(g.py,g.k);
+  const r2=frac(g.M*g.N*g.d2, g.k*g.k);
+  const sh=(v,s)=>{ if(s==='0')return v+'²'; return s.startsWith('-')?`(${v} + ${s.slice(1)})²`:`(${v} − ${s})²`;};
+  const std=sh('x',cxs)+' + '+sh('y',cys)+' = '+r2;
+  return [gen,std,`Center (${cxs.replace('-','−')}, ${cys.replace('-','−')}), radius ≈ ${g.r.toFixed(3)}`];
+}
+function pointP(g){
+  if(g.line){ // point on bisector
+    const mx=(st.A[0]+st.B[0])/2,my=(st.A[1]+st.B[1])/2, dx=-(st.B[1]-st.A[1]),dy=st.B[0]-st.A[0], L=Math.hypot(dx,dy)||1;
+    const t=Math.tan(Math.max(-1.3,Math.min(1.3,st.theta)))*4; return [mx+dx/L*t,my+dy/L*t];
+  }
+  return [g.cx+g.r*Math.cos(st.theta), g.cy+g.r*Math.sin(st.theta)];
+}
+function draw(){
+  svg.innerHTML='';
+  const grid=css('--grid'),axis=css('--axis'),muted=css('--muted'),ca=css('--a'),cb=css('--b'),cp=css('--p'),cc=css('--circle'),fg=css('--fg');
+  el('rect',{x:0,y:0,width:W,height:H,fill:css('--panel')});
+  for(let i=Math.ceil(iX(0));i<=iX(W);i++){el('line',{x1:X(i),y1:0,x2:X(i),y2:H,stroke:grid,'stroke-width':1})}
+  for(let j=Math.ceil(iY(H));j<=iY(0);j++){el('line',{x1:0,y1:Y(j),x2:W,y2:Y(j),stroke:grid,'stroke-width':1})}
+  el('line',{x1:0,y1:oy,x2:W,y2:oy,stroke:axis,'stroke-width':1.5});el('line',{x1:ox,y1:0,x2:ox,y2:H,stroke:axis,'stroke-width':1.5});
+  for(let i=Math.ceil(iX(0));i<=iX(W);i++){ if(i&&i%2===0){const t=el('text',{x:X(i),y:oy+16,'text-anchor':'middle','font-size':11,fill:muted});t.textContent=i}}
+  for(let j=Math.ceil(iY(H));j<=iY(0);j++){ if(j&&j%2===0&&Y(j)>14&&Y(j)<H-8){const t=el('text',{x:ox-6,y:Y(j)+4,'text-anchor':'end','font-size':11,fill:muted});t.textContent=j}}
+  const lx=el('text',{x:W-12,y:oy-8,'font-size':14,fill:muted,'font-style':'italic'});lx.textContent='x';
+  const ly=el('text',{x:ox+8,y:14,'font-size':14,fill:muted,'font-style':'italic'});ly.textContent='y';
+  const g=geom();
+  st.traces.forEach(q=>el('circle',{cx:X(q[0]),cy:Y(q[1]),r:2.2,fill:cp,opacity:.55}));
+  if(g.line){
+    const mx=(st.A[0]+st.B[0])/2,my=(st.A[1]+st.B[1])/2, dx=-(st.B[1]-st.A[1]),dy=st.B[0]-st.A[0];
+    el('line',{x1:X(mx-dx*40),y1:Y(my-dy*40),x2:X(mx+dx*40),y2:Y(my+dy*40),stroke:cc,'stroke-width':2.5});
+  } else {
+    el('circle',{cx:X(g.cx),cy:Y(g.cy),r:g.r*U,fill:'none',stroke:cc,'stroke-width':2.5});
+    el('circle',{cx:X(g.cx),cy:Y(g.cy),r:3,fill:cc});
+    const tc=el('text',{x:X(g.cx)+6,y:Y(g.cy)-6,'font-size':12,fill:cc});tc.textContent='center';
+  }
+  el('line',{x1:X(st.A[0]),y1:Y(st.A[1]),x2:X(st.B[0]),y2:Y(st.B[1]),stroke:muted,'stroke-width':1,'stroke-dasharray':'4 4'});
+  const dv=divPts(), cd=css('--div'), divEl=document.getElementById('divRead');
+  if(dv){
+    divEl.innerHTML=`<b>內分點 I</b><span>${dv.Is}</span><b>外分點 E</b><span>${dv.Es}</span><b>Midpoint</b><span>${dv.Ms} = center ✓</span>`;
+    if(document.getElementById('showDiv').checked){
+      el('line',{x1:X(st.A[0]),y1:Y(st.A[1]),x2:X(dv.E[0]),y2:Y(dv.E[1]),stroke:muted,'stroke-width':1,'stroke-dasharray':'4 4'});
+      el('line',{x1:X(st.B[0]),y1:Y(st.B[1]),x2:X(dv.E[0]),y2:Y(dv.E[1]),stroke:muted,'stroke-width':1,'stroke-dasharray':'4 4'});
+      el('line',{x1:X(dv.I[0]),y1:Y(dv.I[1]),x2:X(dv.E[0]),y2:Y(dv.E[1]),stroke:cd,'stroke-width':3});
+      [[dv.I,'I '+dv.Is,-1],[dv.E,'E '+dv.Es,1]].forEach(([q,t,sd])=>{el('rect',{x:X(q[0])-5,y:Y(q[1])-5,width:10,height:10,fill:cd,transform:`rotate(45 ${X(q[0])} ${Y(q[1])})`});
+        const tt=el('text',{x:X(q[0])+sd*10,y:Y(q[1])+(sd<0?-8:18),'text-anchor':sd<0?'end':'start','font-size':13,'font-weight':700,fill:cd});tt.textContent=t;});
+    }
+  } else divEl.innerHTML='<b>m = n</b><span>No external point: the locus is a line.</span>';
+  whySteps();
+  const P=pointP(g);
+  el('line',{x1:X(P[0]),y1:Y(P[1]),x2:X(st.A[0]),y2:Y(st.A[1]),stroke:ca,'stroke-width':2});
+  el('line',{x1:X(P[0]),y1:Y(P[1]),x2:X(st.B[0]),y2:Y(st.B[1]),stroke:cb,'stroke-width':2});
+  const mk=(pt,col,lab,id)=>{const c=el('circle',{cx:X(pt[0]),cy:Y(pt[1]),r:9,fill:col,stroke:css('--panel'),'stroke-width':2,'data-h':id,style:'cursor:grab'});
+    const t=el('text',{x:X(pt[0])+11,y:Y(pt[1])-10,'font-size':16,'font-weight':700,fill:col});t.textContent=lab;return c};
+  mk(st.A,ca,`A(${fmt(st.A[0])}, ${fmt(st.A[1])})`,'A'); mk(st.B,cb,`B(${fmt(st.B[0])}, ${fmt(st.B[1])})`,'B'); mk(P,cp,'P','P');
+  // readouts
+  const [g1,g2,g3]=eqText(g);
+  document.getElementById('eqGen').textContent=g1; document.getElementById('eqStd').textContent=g2; document.getElementById('eqNote').textContent=g3;
+  const PA=Math.hypot(P[0]-st.A[0],P[1]-st.A[1]),PB=Math.hypot(P[0]-st.B[0],P[1]-st.B[1]);
+  document.getElementById('rP').textContent=`(${P[0].toFixed(2)}, ${P[1].toFixed(2)})`;
+  document.getElementById('rPA').textContent=PA.toFixed(3); document.getElementById('rPB').textContent=PB.toFixed(3);
+  document.getElementById('rRatio').innerHTML=`${(PA/PB).toFixed(3)} <span class="ok">= ${st.m}/${st.n} ✓</span>`;
+  document.getElementById('mOut').textContent=st.m; document.getElementById('nOut').textContent=st.n;
+  if(st.trace){st.traces.push(P); if(st.traces.length>400)st.traces.shift()}
+}
+const fmt=v=>v<0?'−'+Math.abs(v):String(v);
+function divPts(){ const [a1,a2]=st.A,[b1,b2]=st.B,m=st.m,n=st.n; if(m===n)return null;
+  const f=(p,q)=>frac(p,q).replace('-','−');
+  const I=[(n*a1+m*b1)/(m+n),(n*a2+m*b2)/(m+n)], E=[(n*a1-m*b1)/(n-m),(n*a2-m*b2)/(n-m)];
+  // midpoint of I and E has denominator 2(m+n)(n-m)
+  const D=2*(m+n)*(n-m), Mx=(n*a1+m*b1)*(n-m)+(n*a1-m*b1)*(m+n), My=(n*a2+m*b2)*(n-m)+(n*a2-m*b2)*(m+n);
+  return {I,E,Is:`(${f(n*a1+m*b1,m+n)}, ${f(n*a2+m*b2,m+n)})`,Es:`(${f(n*a1-m*b1,n-m)}, ${f(n*a2-m*b2,n-m)})`,Ms:`(${f(Mx,D)}, ${f(My,D)})`};}
+function sq(v,a){return a===0?v+'²':`(${v} ${a>0?'−':'+'} ${Math.abs(a)})²`}
+function whySteps(){
+  const [a1,a2]=st.A,[b1,b2]=st.B,m=st.m,n=st.n,M=m*m,N=n*n;
+  const co=c=>c===1?'':String(c);
+  document.getElementById('s1').innerHTML=`PA : PB = ${m} : ${n}  ⇒  ${co(N)}${N>1?'·':''}PA² = ${co(M)}${M>1?'·':''}PB²<br>⇒  ${N>1?N+'[':''}${sq('x',a1)} + ${sq('y',a2)}${N>1?']':''} = ${M>1?M+'[':''}${sq('x',b1)} + ${sq('y',b2)}${M>1?']':''}`;
+  let k=N-M, D=-2*(N*a1-M*b1), E=-2*(N*a2-M*b2), F=N*(a1*a1+a2*a2)-M*(b1*b1+b2*b2);
+  if(k<0||(k===0&&(D<0||(D===0&&E<0)))){k=-k;D=-D;E=-E;F=-F}
+  const t=(c,v)=>c===0?'':(c<0?' − ':' + ')+(Math.abs(c)===1&&v?'':Math.abs(c))+v;
+  const s2=document.getElementById('s2'), c2=document.getElementById('s2c');
+  if(k!==0){
+    const lead=k===1?'x² + y²':`${k}x² + ${k}y²`;
+    s2.textContent=lead+t(D,'x')+t(E,'y')+t(F,'')+' = 0';
+    c2.innerHTML=`x² and y² have the <b>same coefficient ${k}</b> (= |n² − m²|) and there is <b>no xy term</b>. Divide by ${k}: this is the general form of a circle. <span class="ok">⇒ circle ✓</span>`;
+  } else {
+    let s0=(t(D,'x')+t(E,'y')+t(F,'')).replace(/^ \+ /,'').replace(/^ − /,'−');
+    s2.textContent=s0+' = 0';
+    c2.innerHTML='When m = n, the x² and y² terms <b>cancel</b>. Only a first-degree equation is left. <span class="ok">⇒ a line: the perpendicular bisector of AB</span>';
+  }
+}
+// dragging
+let drag=null;
+function svgPt(e){const r=svg.getBoundingClientRect();return [(e.clientX-r.left)*W/r.width,(e.clientY-r.top)*H/r.height]}
+svg.addEventListener('pointerdown',e=>{const h=e.target.getAttribute&&e.target.getAttribute('data-h');if(h){drag=h;svg.setPointerCapture(e.pointerId);e.preventDefault()}});
+svg.addEventListener('pointermove',e=>{if(!drag)return;const [px,py]=svgPt(e);const x=iX(px),y=iY(py);
+  if(drag==='P'){const g=geom(); if(g.line){const mx=(st.A[0]+st.B[0])/2,my=(st.A[1]+st.B[1])/2,dx=-(st.B[1]-st.A[1]),dy=st.B[0]-st.A[0],L=Math.hypot(dx,dy)||1;
+      const t=((x-mx)*dx+(y-my)*dy)/L; st.theta=Math.atan(Math.max(-30,Math.min(30,t/4)));}
+    else st.theta=Math.atan2(y-g.cy,x-g.cx);}
+  else{const nx=Math.round(x),ny=Math.round(y);const other=drag==='A'?st.B:st.A; if(nx===other[0]&&ny===other[1])return; st[drag]=[nx,ny]}
+  draw()});
+svg.addEventListener('pointerup',()=>drag=null);svg.addEventListener('pointercancel',()=>drag=null);
+const clampR=v=>Math.max(1,Math.min(6,v));
+document.getElementById('mUp').onclick=()=>{st.m=clampR(st.m+1);st.traces=[];draw()};
+document.getElementById('mDown').onclick=()=>{st.m=clampR(st.m-1);st.traces=[];draw()};
+document.getElementById('nUp').onclick=()=>{st.n=clampR(st.n+1);st.traces=[];draw()};
+document.getElementById('nDown').onclick=()=>{st.n=clampR(st.n-1);st.traces=[];draw()};
+document.getElementById('showDiv').onchange=draw;
+document.getElementById('book').onclick=()=>{st.A=[3,-1];st.B=[0,5];st.m=1;st.n=2;st.traces=[];draw()};
+document.getElementById('equal').onclick=()=>{st.n=st.m;st.traces=[];draw()};
+const tb=document.getElementById('trace');
+tb.onclick=()=>{st.trace=!st.trace;if(!st.trace)st.traces=[];tb.textContent=st.trace?'Clear trace':'Leave a trace';draw()};
+let spinning=null;const sb=document.getElementById('spin');
+sb.onclick=()=>{ if(spinning){cancelAnimationFrame(spinning);spinning=null;sb.textContent='Move P around';return}
+  sb.textContent='Stop';const step=()=>{st.theta+=0.025;draw();spinning=requestAnimationFrame(step)};step()};
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',draw);
+new MutationObserver(draw).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+draw();
+})();
+</script>
+
+</body>
+</html>
